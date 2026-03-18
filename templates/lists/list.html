@@ -1,0 +1,153 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+<h1>Мои Списки</h1>
+
+{% if lists %}
+<div class="list-group">
+    {% for l in lists %}
+    <div class="list-group-item">
+        <a href="{% url 'list_detail' l.id %}">{{ l.title }}</a>
+        {% if l.sublists.all %}
+        <ul class="mt-2">
+            {% for sub in l.sublists.all %}
+            <li><a href="{% url 'list_detail' sub.id %}">{{ sub.title }}</a></li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="no-lists">
+    <p>Списки пока не созданы. Создайте первый ниже.</p>
+</div>
+{% endif %}
+
+<div class="create-form">
+    <h2>Создать новый список</h2>
+    <form method="post" id="create-list-form">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label for="id_title">Название списка</label>
+            <input type="text" name="title" id="id_title" class="form-control" required>
+        </div>
+        <div class="mb-3">
+            <label for="id_category">Категория</label>
+            <select name="category" id="id_category" class="form-control">
+                <option value="">Без категории</option>
+                {% for cat in categories %}
+                <option value="{{ cat.id }}">{{ cat.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="mb-3">
+            <label for="id_new_category">Или создать новую категорию</label>
+            <input type="text" name="new_category" id="id_new_category" class="form-control" placeholder="Введите название новой категории">
+        </div>
+        <div class="mb-3">
+            <label for="id_tags">Теги (через запятую, опционально)</label>
+            <input type="text" name="tags" id="id_tags" class="form-control" placeholder="работа, срочное, покупки">
+        </div>
+        <div id="items-container">
+            <div class="mb-3 item-input">
+                <label>Пункт 1</label>
+                <div class="input-with-button">
+                    <input type="text" name="items[]" class="form-control" placeholder="Введите пункт списка">
+                    <button type="button" class="btn btn-sm btn-danger remove-item">×</button>
+                </div>
+            </div>
+        </div>
+        <button type="button" id="add-item-btn" class="btn btn-primary mb-3">Новый пункт</button>
+        <button type="submit" class="btn btn-success" style="margin-left: 10px;">Создать список</button>
+    </form>
+</div>
+
+<script>
+const itemsContainer = document.getElementById('items-container');
+
+function updateItemLabels() {
+    itemsContainer.querySelectorAll('.item-input').forEach((itemEl, index) => {
+        const label = itemEl.querySelector('label');
+        if (label) label.textContent = `Пункт ${index + 1}`;
+    });
+}
+
+function createItemInput(index) {
+    const item = document.createElement('div');
+    item.className = 'mb-3 item-input';
+    item.innerHTML = `
+        <label>Пункт ${index}</label>
+        <div class="input-with-button">
+            <input type="text" name="items[]" class="form-control" placeholder="Введите пункт списка">
+            <button type="button" class="btn btn-sm btn-danger remove-item">×</button>
+        </div>
+    `;
+    return item;
+}
+
+function ensureAtLeastOneItem() {
+    if (itemsContainer.querySelectorAll('.item-input').length === 0) {
+        itemsContainer.appendChild(createItemInput(1));
+    }
+    updateItemLabels();
+}
+
+itemsContainer.addEventListener('keydown', function(e) {
+    if (e.target.name === 'items[]' && e.key === 'Enter') {
+        e.preventDefault();
+        const itemCount = itemsContainer.querySelectorAll('.item-input').length + 1;
+        const newItem = createItemInput(itemCount);
+        itemsContainer.appendChild(newItem);
+        newItem.querySelector('input').focus();
+        updateItemLabels();
+    }
+});
+
+itemsContainer.addEventListener('click', function(e) {
+    if (e.target.classList.contains('remove-item')) {
+        const removed = e.target.closest('.item-input');
+        if (removed) {
+            removed.remove();
+            ensureAtLeastOneItem();
+        }
+    }
+});
+
+// Ensure there's always at least one input on page load
+ensureAtLeastOneItem();
+</script>
+
+{% if current_list %}
+<div class="mt-4">
+    <h2>{{ current_list.title }}</h2>
+    <form method="post" action="{% url 'toggle_all' current_list.id %}" class="mb-3">
+        {% csrf_token %}
+        <button type="submit" class="btn {% if all_checked %}btn-success{% else %}btn-primary{% endif %}">
+            {% if all_checked %}Снять все отметки{% else %}Отметить все{% endif %}
+        </button>
+    </form>
+    <div class="list-group">
+        {% for item in current_list.items.all %}
+        <div class="item-row">
+            <form method="post" action="{% url 'toggle_item' item.id %}" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="checkbox-btn {% if item.checked %}checked{% endif %}">
+                    {% if item.checked %}✓{% else %}○{% endif %}
+                </button>
+            </form>
+            <span class="item-text {% if item.checked %}text-decoration-line-through text-muted{% endif %}">{{ item.text }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% if current_list.category %}
+    <p class="mt-3"><strong>Категория:</strong> <span class="category-tag">{{ current_list.category }}</span></p>
+    {% endif %}
+    {% if current_list.tags.all %}
+    <p><strong>Теги:</strong> {% for tag in current_list.tags.all %}<span class="category-tag">{{ tag.name }}</span>{% endfor %}</p>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}
+
+
