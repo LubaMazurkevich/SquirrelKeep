@@ -1,5 +1,5 @@
 """
-Django settings for Lists project.
+Django settings for squirrelkeep project.
 """
 import os
 from pathlib import Path
@@ -30,7 +30,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'Lists.urls'
+ROOT_URLCONF = 'squirrelkeep.urls'
 
 TEMPLATES = [
     {
@@ -48,7 +48,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'Lists.wsgi.application'
+WSGI_APPLICATION = 'squirrelkeep.wsgi.application'
 
 DATABASES = {
     'default': {

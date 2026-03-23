@@ -1,8 +1,8 @@
 """
-WSGI config for Lists project.
+WSGI config for squirrelkeep project.
 """
 import os
 from django.core.wsgi import get_wsgi_application
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'Lists.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'squirrelkeep.settings')
 application = get_wsgi_application()
