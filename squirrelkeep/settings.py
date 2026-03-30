@@ -17,8 +17,27 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.sites',  # for allauth
+
+    # my apps
     'lists',
+
+    # allauth
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',
 ]
+
+AUTHENTICATION_BACKENDS = (
+    'django.contrib.auth.backends.ModelBackend',  # стандартный
+    'allauth.account.auth_backends.AuthenticationBackend',  # allauth
+)
+
+SITE_ID = 1  # нужно для allauth
+LOGIN_URL = '/accounts/login/'
+LOGIN_REDIRECT_URL = '/'  # после входа
+LOGOUT_REDIRECT_URL = '/'  # после выхода
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -27,6 +46,7 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
+    'allauth.account.middleware.AccountMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
