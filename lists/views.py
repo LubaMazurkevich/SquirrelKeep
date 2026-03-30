@@ -1,16 +1,18 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from .models import List, ListItem, Category, Tag
 from django.views.decorators.http import require_POST
+from django.contrib.auth.decorators import login_required
 
+@login_required
 def list_view(request, list_id=None):
     if list_id:
-        lst = get_object_or_404(List, id=list_id)
+        lst = get_object_or_404(List, id=list_id, user=request.user)
         all_checked = lst.items.exists() and not lst.items.filter(checked=False).exists()
     else:
         lst = None
         all_checked = False
-
-    lists = List.objects.filter(parent=None)
+    # only current user lists
+    lists = List.objects.filter(parent=None, user=request.user)
     categories = Category.objects.all()
     tags = Tag.objects.all()
 
@@ -21,7 +23,7 @@ def list_view(request, list_id=None):
         tags_str = request.POST.get('tags')
         items_list = request.POST.getlist('items[]')
         if title:
-            new_list = List.objects.create(title=title)
+            new_list = List.objects.create(title=title, user=request.user)
             if category_id:
                 category = get_object_or_404(Category, id=category_id)
                 new_list.category = category
@@ -50,16 +52,18 @@ def list_view(request, list_id=None):
 
 @require_POST
 def toggle_item(request, item_id):
-    item = get_object_or_404(ListItem, id=item_id)
+    item = get_object_or_404(ListItem, id=item_id, list__user=request.user)
     item.checked = not item.checked
     item.save()
     return redirect(request.META.get('HTTP_REFERER', '/'))
 
 @require_POST
 def toggle_all(request, list_id):
-    lst = get_object_or_404(List, id=list_id)
+    lst = get_object_or_404(List, id=list_id, user=request.user)
     all_checked = all(item.checked for item in lst.items.all())
     for item in lst.items.all():
         item.checked = not all_checked
         item.save()
     return redirect(request.META.get('HTTP_REFERER', '/'))
+
+
