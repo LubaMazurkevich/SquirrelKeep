@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% load socialaccount %}
+
+{% block content %}
+<div class="auth-card">
+    <h1>Вход в SquirrelKeep</h1>
+    <p>Используйте email и пароль, чтобы открыть ваши списки.</p>
+
+    <form method="post" action="{% url 'account_login' %}">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+        <div class="mb-3 text-danger">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <div class="mb-3">
+            <label for="id_login">Email</label>
+            <input
+                type="email"
+                name="login"
+                id="id_login"
+                class="form-control"
+                required
+                autocomplete="email"
+                value="{{ form.login.value|default:'' }}"
+            >
+        </div>
+
+        <div class="mb-3">
+            <label for="id_password">Пароль</label>
+            <input
+                type="password"
+                name="password"
+                id="id_password"
+                class="form-control"
+                required
+                autocomplete="current-password"
+            >
+        </div>
+
+        {% if redirect_field_value %}
+        <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">
+        {% endif %}
+
+        <div class="auth-actions">
+            <button type="submit" class="btn btn-primary">Войти</button>
+        </div>
+    </form>
+
+    <div class="auth-divider">или</div>
+
+    <div class="auth-actions">
+        <a href="{% provider_login_url 'google' %}" class="btn btn-success">Войти через Google</a>
+    </div>
+
+    {% if not user.is_authenticated %}
+    <p class="auth-link-note">
+        Нет аккаунта?
+        <a href="{% url 'account_signup' %}">Зарегистрироваться</a>
+    </p>
+    {% endif %}
+</div>
+{% endblock %}
