@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% load socialaccount %}
+
+{% block content %}
+<div class="auth-card">
+    <h1>Регистрация в SquirrelKeep</h1>
+    <p>Создайте аккаунт, чтобы сохранять и синхронизировать ваши списки.</p>
+
+    <form method="post" action="{% url 'account_signup' %}">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+        <div class="mb-3 text-danger">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        {% for field in form %}
+        <div class="mb-3">
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}
+            <div class="text-danger">{{ field.errors }}</div>
+            {% endif %}
+        </div>
+        {% endfor %}
+
+        {% if redirect_field_value %}
+        <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">
+        {% endif %}
+
+        <div class="auth-actions">
+            <button type="submit" class="btn btn-primary">Зарегистрироваться</button>
+        </div>
+    </form>
+
+    <div class="auth-divider">или</div>
+
+    <div class="auth-actions">
+        <a href="{% provider_login_url 'google' %}" class="btn btn-success">Продолжить через Google</a>
+    </div>
+
+    <p class="auth-link-note">
+        Уже есть аккаунт?
+        <a href="{% url 'account_login' %}">Войти</a>
+    </p>
+</div>
+{% endblock %}
