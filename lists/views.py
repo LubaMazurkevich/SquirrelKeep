@@ -2,6 +2,80 @@ from django.shortcuts import render, get_object_or_404, redirect
 from .models import List, ListItem, Category, Tag
 from django.views.decorators.http import require_POST
 from django.contrib.auth.decorators import login_required
+from dal import autocomplete
+from urllib.parse import unquote_plus
+import re
+
+from .forms import ListCreateForm
+
+
+class CategoryAutocomplete(autocomplete.Select2QuerySetView):
+    paginate_by = None
+    create_field = "name"
+
+    # Method for fetching categories based on user input, 
+    # with support for creating new categories if they don't exist.
+    def get_queryset(self):
+        if not self.request.user.is_authenticated:
+            return Category.objects.none()
+
+        qs = Category.objects.all().order_by('name')
+
+        if self.q:
+            qs = qs.filter(name__icontains=self.q)
+
+        return qs
+
+
+    def create_object(self, text):
+        # DAL can send escaped values (for example %u044B%u044B for "ыы").
+        # Normalize them before creating/fetching a category.
+        decoded = unquote_plus(text or '')
+        decoded = re.sub(r'%u([0-9A-Fa-f]{4})', lambda m: chr(int(m.group(1), 16)), decoded)
+        clean_name = decoded.strip()
+        if not clean_name:
+            return None
+        category, _ = Category.objects.get_or_create(name=clean_name)
+        return category
+
+    def has_add_permission(self, request):
+        # Allow creating categories from autocomplete for any logged-in user.
+        return request.user.is_authenticated
+
+
+class TagAutocomplete(autocomplete.Select2QuerySetView):
+    paginate_by = None
+    create_field = "name"
+
+    # Method for fetching tags based on user input 
+    # and creating new tags if they don't exist.
+    def get_queryset(self):
+        if not self.request.user.is_authenticated:
+            return Tag.objects.none()
+
+        qs = Tag.objects.all().order_by('name')
+
+        if self.q:
+            qs = qs.filter(name__icontains=self.q)
+
+        return qs
+
+    def create_object(self, text):
+        decoded = unquote_plus(text or '')
+        decoded = re.sub(r'%u([0-9A-Fa-f]{4})', lambda m: chr(int(m.group(1), 16)), decoded)
+        clean_name = decoded.strip()
+        if not clean_name:
+            return None
+
+        existing = Tag.objects.filter(name__iexact=clean_name).first()
+        if existing:
+            return existing
+
+        return Tag.objects.create(name=clean_name)
+
+    def has_add_permission(self, request):
+        return request.user.is_authenticated
+
 
 @login_required
 def list_view(request, list_id=None):
@@ -13,29 +87,17 @@ def list_view(request, list_id=None):
         all_checked = False
     # only current user lists
     lists = List.objects.filter(parent=None, user=request.user)
-    categories = Category.objects.all()
-    tags = Tag.objects.all()
+    form = ListCreateForm()
 
     if request.method == 'POST':
-        title = request.POST.get('title')
-        category_id = request.POST.get('category')
-        new_category_name = request.POST.get('new_category')
-        tags_str = request.POST.get('tags')
+        form = ListCreateForm(request.POST)
         items_list = request.POST.getlist('items[]')
-        if title:
-            new_list = List.objects.create(title=title, user=request.user)
-            if category_id:
-                category = get_object_or_404(Category, id=category_id)
-                new_list.category = category
-            elif new_category_name:
-                category, created = Category.objects.get_or_create(name=new_category_name.strip())
-                new_list.category = category
+        if form.is_valid():
+            new_list = form.save(commit=False)
+            new_list.user = request.user
             new_list.save()
-            if tags_str:
-                tag_names = [name.strip() for name in tags_str.split(',') if name.strip()]
-                for name in tag_names:
-                    tag, created = Tag.objects.get_or_create(name=name)
-                    new_list.tags.add(tag)
+            form.instance = new_list
+            form.save_m2m()
             for item_text in items_list:
                 item_text = item_text.strip()
                 if item_text:
@@ -46,8 +108,7 @@ def list_view(request, list_id=None):
         'lists': lists,
         'current_list': lst,
         'all_checked': all_checked,
-        'categories': categories,
-        'tags': tags,
+        'form': form,
     })
 
 @require_POST

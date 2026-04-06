@@ -1,6 +1,9 @@
 {% extends 'base.html' %}
 {% load static %}
 {% block content %}
+<script src="{% static 'admin/js/vendor/jquery/jquery.js' %}"></script>
+{{ form.media }}
+<script src="{% static 'autocomplete_light/dal_select2_fix.js' %}"></script>
 <h1>Мои Списки</h1>
 
 {% if lists %}
@@ -30,24 +33,15 @@
         {% csrf_token %}
         <div class="mb-3">
             <label for="id_title">Название списка</label>
-            <input type="text" name="title" id="id_title" class="form-control" required>
+            {{ form.title }}
         </div>
         <div class="mb-3">
             <label for="id_category">Категория</label>
-            <select name="category" id="id_category" class="form-control">
-                <option value="">Без категории</option>
-                {% for cat in categories %}
-                <option value="{{ cat.id }}">{{ cat.name }}</option>
-                {% endfor %}
-            </select>
+            {{ form.category }}
         </div>
         <div class="mb-3">
-            <label for="id_new_category">Или создать новую категорию</label>
-            <input type="text" name="new_category" id="id_new_category" class="form-control" placeholder="Введите название новой категории">
-        </div>
-        <div class="mb-3">
-            <label for="id_tags">Теги (через запятую, опционально)</label>
-            <input type="text" name="tags" id="id_tags" class="form-control" placeholder="работа, срочное, покупки">
+            <label for="id_tags">Теги</label>
+            {{ form.tags }}
         </div>
         <div id="items-container">
             <div class="mb-3 item-input">
