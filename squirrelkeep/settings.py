@@ -22,6 +22,10 @@ INSTALLED_APPS = [
     # my apps
     'lists',
 
+    # django-autocomplete-light
+    'dal',
+    'dal_select2',
+
     # allauth
     'allauth',
     'allauth.account',
