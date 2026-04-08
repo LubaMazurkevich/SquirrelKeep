@@ -1,11 +1,12 @@
+import re
+from urllib.parse import unquote_plus
+
 from django.shortcuts import render, get_object_or_404, redirect
-from .models import List, ListItem, Category, Tag
 from django.views.decorators.http import require_POST
 from django.contrib.auth.decorators import login_required
 from dal import autocomplete
-from urllib.parse import unquote_plus
-import re
 
+from .models import List, ListItem, Category, Tag
 from .forms import ListCreateForm
 
 
@@ -18,12 +19,9 @@ class CategoryAutocomplete(autocomplete.Select2QuerySetView):
     def get_queryset(self):
         if not self.request.user.is_authenticated:
             return Category.objects.none()
-
         qs = Category.objects.all().order_by('name')
-
         if self.q:
             qs = qs.filter(name__icontains=self.q)
-
         return qs
 
 
@@ -52,12 +50,9 @@ class TagAutocomplete(autocomplete.Select2QuerySetView):
     def get_queryset(self):
         if not self.request.user.is_authenticated:
             return Tag.objects.none()
-
         qs = Tag.objects.all().order_by('name')
-
         if self.q:
             qs = qs.filter(name__icontains=self.q)
-
         return qs
 
     def create_object(self, text):
@@ -66,11 +61,9 @@ class TagAutocomplete(autocomplete.Select2QuerySetView):
         clean_name = decoded.strip()
         if not clean_name:
             return None
-
         existing = Tag.objects.filter(name__iexact=clean_name).first()
         if existing:
             return existing
-
         return Tag.objects.create(name=clean_name)
 
     def has_add_permission(self, request):
