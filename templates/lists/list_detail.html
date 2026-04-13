@@ -26,25 +26,31 @@
             {{ form.tags }}
         </div>
 
+        {{ item_formset.management_form }}
         <div id="items-container">
-            {% for item in current_list.items.all %}
+            {% for item_form in item_formset %}
             <div class="mb-3 item-input">
                 <label>Пункт {{ forloop.counter }}</label>
+                {{ item_form.id }}
                 <div class="input-with-button">
-                    <input type="text" name="items[]" class="form-control" value="{{ item.text }}" placeholder="Введите пункт списка">
+                    {{ item_form.text }}
                     <button type="button" class="btn btn-sm btn-danger remove-item">×</button>
-                </div>
-            </div>
-            {% empty %}
-            <div class="mb-3 item-input">
-                <label>Пункт 1</label>
-                <div class="input-with-button">
-                    <input type="text" name="items[]" class="form-control" placeholder="Введите пункт списка">
-                    <button type="button" class="btn btn-sm btn-danger remove-item">×</button>
+                    <span style="display:none;">{{ item_form.DELETE }}</span>
                 </div>
             </div>
             {% endfor %}
         </div>
+        <template id="empty-form-template">
+            <div class="mb-3 item-input">
+                <label>Пункт</label>
+                {{ item_formset.empty_form.id }}
+                <div class="input-with-button">
+                    {{ item_formset.empty_form.text }}
+                    <button type="button" class="btn btn-sm btn-danger remove-item">×</button>
+                    <span style="display:none;">{{ item_formset.empty_form.DELETE }}</span>
+                </div>
+            </div>
+        </template>
         <button type="button" id="add-item-btn" class="btn btn-primary mb-3">Новый пункт</button>
 
         <button type="submit" class="btn btn-success">Сохранить изменения</button>

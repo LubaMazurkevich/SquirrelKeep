@@ -7,7 +7,7 @@ from django.contrib.auth.decorators import login_required
 from dal import autocomplete
 
 from .models import List, ListItem, Category, Tag
-from .forms import ListCreateForm
+from .forms import ListCreateForm, ItemFormSet
 
 
 class CategoryAutocomplete(autocomplete.Select2QuerySetView):
@@ -115,10 +115,12 @@ def list_detail_view(request, list_id):
     all_checked = lst.items.exists() and not lst.items.filter(checked=False).exists()
     edit_mode = request.GET.get('edit') == '1'
     form = ListCreateForm(instance=lst) if edit_mode else None
+    item_formset = ItemFormSet(instance=lst, prefix='items') if edit_mode else None
     return render(request, 'lists/list_detail.html', {
         'current_list': lst,
         'all_checked': all_checked,
         'form': form,
+        'item_formset': item_formset,
         'edit_mode': edit_mode,
     })
 
@@ -128,27 +130,19 @@ def list_detail_view(request, list_id):
 def edit_list(request, list_id):
     lst = get_object_or_404(List, id=list_id, user=request.user)
     form = ListCreateForm(request.POST, instance=lst)
-    if form.is_valid():
+    item_formset = ItemFormSet(request.POST, instance=lst, prefix='items')
+    if form.is_valid() and item_formset.is_valid():
         form.save()
-        raw_items = request.POST.getlist('items[]')
-        cleaned_items = [text.strip() for text in raw_items if text.strip()]
-
-        # Keep existing checked states where possible by updating items by position.
-        existing_items = list(lst.items.order_by('id'))
-        for index, text in enumerate(cleaned_items):
-            if index < len(existing_items):
-                item = existing_items[index]
-                if item.text != text:
-                    item.text = text
-                    item.save(update_fields=['text'])
-            else:
-                ListItem.objects.create(list=lst, text=text)
-
-        if len(existing_items) > len(cleaned_items):
-            for item in existing_items[len(cleaned_items):]:
-                item.delete()
-
-    return redirect('list_detail', list_id=list_id)
+        item_formset.save()
+        return redirect('list_detail', list_id=list_id)
+    all_checked = lst.items.exists() and not lst.items.filter(checked=False).exists()
+    return render(request, 'lists/list_detail.html', {
+        'current_list': lst,
+        'all_checked': all_checked,
+        'form': form,
+        'item_formset': item_formset,
+        'edit_mode': True,
+    })
 
 @require_POST
 def toggle_item(request, item_id):
