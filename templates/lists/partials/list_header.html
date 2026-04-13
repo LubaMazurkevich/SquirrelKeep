@@ -1,0 +1,16 @@
+<div class="mb-3" style="display:flex; gap:10px; align-items:center;">
+    <a href="{% url 'list_index' %}" class="btn btn-outline-secondary">&larr; К спискам</a>
+</div>
+
+<div style="display:flex; align-items:center; justify-content:center; gap:10px; width:100%;">
+    <h1 style="margin:0;">{{ current_list.title }}</h1>
+    {% if edit_mode %}
+    <a href="{% url 'list_detail' current_list.id %}" title="Обычный режим" style="text-decoration:none; color:#6c757d; opacity:0.75; font-size:0.92rem;">
+        ↩ Обычный режим
+    </a>
+    {% else %}
+    <a href="{% url 'list_detail' current_list.id %}?edit=1" title="Редактировать" style="text-decoration:none; color:#6c757d; opacity:0.75; font-size:0.92rem;">
+        ✏ Редактировать
+    </a>
+    {% endif %}
+</div>

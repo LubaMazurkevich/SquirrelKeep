@@ -1,7 +1,8 @@
 from django import forms
+from django.forms import inlineformset_factory
 from dal import autocomplete
 
-from .models import List
+from .models import List, ListItem
 
 
 class ListCreateForm(forms.ModelForm):
@@ -26,3 +27,18 @@ class ListCreateForm(forms.ModelForm):
                 },
             ),
         }
+
+
+ItemFormSet = inlineformset_factory(
+    List,
+    ListItem,
+    fields=['text'],
+    extra=0,
+    can_delete=True,
+    widgets={
+        'text': forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Введите пункт списка',
+        })
+    }
+)

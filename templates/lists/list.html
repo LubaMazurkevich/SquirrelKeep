@@ -21,6 +21,15 @@
     </div>
     {% endfor %}
 </div>
+{% if has_more_lists and not show_all_lists %}
+<div class="mt-3">
+    <a href="{% url 'list_index' %}?all=1" class="btn btn-outline-primary">Все списки</a>
+</div>
+{% elif show_all_lists %}
+<div class="mt-3">
+    <a href="{% url 'list_index' %}" class="btn btn-outline-secondary">Свернуть</a>
+</div>
+{% endif %}
 {% else %}
 <div class="no-lists">
     <p>Списки пока не созданы. Создайте первый ниже.</p>
@@ -56,42 +65,7 @@
         <button type="submit" class="btn btn-success" style="margin-left: 10px;">Создать список</button>
     </form>
 </div>
-
-
-{% if current_list %}
-<div class="mt-4">
-    <h2>{{ current_list.title }}</h2>
-    <form method="post" action="{% url 'toggle_all' current_list.id %}" class="mb-3">
-        {% csrf_token %}
-        <button type="submit" class="btn {% if all_checked %}btn-success{% else %}btn-primary{% endif %}">
-            {% if all_checked %}Снять все отметки{% else %}Отметить все{% endif %}
-        </button>
-    </form>
-    <div class="list-group">
-        {% for item in current_list.items.all %}
-        <div class="item-row">
-            <form method="post" action="{% url 'toggle_item' item.id %}" style="display:inline;">
-                {% csrf_token %}
-                <button type="submit" class="checkbox-btn {% if item.checked %}checked{% endif %}">
-                    {% if item.checked %}✓{% else %}○{% endif %}
-                </button>
-            </form>
-            <span class="item-text {% if item.checked %}text-decoration-line-through text-muted{% endif %}">{{ item.text }}</span>
-        </div>
-        {% endfor %}
-    </div>
-    {% if current_list.category %}
-    <p class="mt-3"><strong>Категория:</strong> <span class="category-tag">{{ current_list.category }}</span></p>
-    {% endif %}
-    {% if current_list.tags.all %}
-    <p><strong>Теги:</strong> {% for tag in current_list.tags.all %}<span class="category-tag">{{ tag.name }}</span>{% endfor %}</p>
-    {% endif %}
-</div>
-{% endif %}
-{% endblock %}
-
-
-{% load static %}
 <script src="{% static 'lists/js/lists.js' %}"></script>
+{% endblock %}
 
 

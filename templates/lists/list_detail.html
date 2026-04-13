@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+{% if edit_mode %}
+<script src="{% static 'admin/js/vendor/jquery/jquery.js' %}"></script>
+{{ form.media }}
+<script src="{% static 'autocomplete_light/dal_select2_fix.js' %}"></script>
+{% endif %}
+
+{% include 'lists/partials/list_header.html' %}
+
+{% if edit_mode %}
+<div class="create-form mt-3">
+    <form method="post" action="{% url 'edit_list' current_list.id %}">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label for="id_title">Название списка</label>
+            {{ form.title }}
+        </div>
+        <div class="mb-3">
+            <label for="id_category">Категория</label>
+            {{ form.category }}
+        </div>
+        <div class="mb-3">
+            <label for="id_tags">Теги</label>
+            {{ form.tags }}
+        </div>
+
+        {{ item_formset.management_form }}
+        <div id="items-container">
+            {% for item_form in item_formset %}
+            <div class="mb-3 item-input">
+                <label>Пункт {{ forloop.counter }}</label>
+                {{ item_form.id }}
+                <div class="input-with-button">
+                    {{ item_form.text }}
+                    <button type="button" class="btn btn-sm btn-danger remove-item">×</button>
+                    <span style="display:none;">{{ item_form.DELETE }}</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <template id="empty-form-template">
+            <div class="mb-3 item-input">
+                <label>Пункт</label>
+                {{ item_formset.empty_form.id }}
+                <div class="input-with-button">
+                    {{ item_formset.empty_form.text }}
+                    <button type="button" class="btn btn-sm btn-danger remove-item">×</button>
+                    <span style="display:none;">{{ item_formset.empty_form.DELETE }}</span>
+                </div>
+            </div>
+        </template>
+        <button type="button" id="add-item-btn" class="btn btn-primary mb-3">Новый пункт</button>
+
+        <button type="submit" class="btn btn-success">Сохранить изменения</button>
+    </form>
+</div>
+{% else %}
+{% if current_list.category %}
+<p class="mt-3"><strong>Категория:</strong> <span class="category-tag">{{ current_list.category }}</span></p>
+{% endif %}
+<p><strong>Теги:</strong>
+    {% if current_list.tags.all %}
+        {% for tag in current_list.tags.all %}<span class="category-tag">{{ tag.name }}</span>{% endfor %}
+    {% else %}
+        <span class="text-muted">нет тегов</span>
+    {% endif %}
+</p>
+{% endif %}
+
+{% if not edit_mode %}
+{% include 'lists/partials/list_items.html' %}
+{% endif %}
+{% if edit_mode %}
+<script src="{% static 'lists/js/lists.js' %}"></script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,15 @@
+<form method="post" action="{% url 'toggle_all' current_list.id %}" class="mb-3" style="display:flex; justify-content:flex-end;">
+    {% csrf_token %}
+    <button type="submit" class="btn {% if all_checked %}btn-success{% else %}btn-primary{% endif %}">
+        {% if all_checked %}Снять все отметки{% else %}Отметить все{% endif %}
+    </button>
+</form>
+
+<h3>Пункты списка</h3>
+<div class="list-group">
+    {% for item in current_list.items.all %}
+        {% include 'lists/partials/item.html' with item=item %}
+    {% empty %}
+    <p class="text-muted">В этом списке пока нет пунктов.</p>
+    {% endfor %}
+</div>

@@ -7,7 +7,7 @@ from django.contrib.auth.decorators import login_required
 from dal import autocomplete
 
 from .models import List, ListItem, Category, Tag
-from .forms import ListCreateForm
+from .forms import ListCreateForm, ItemFormSet
 
 
 class CategoryAutocomplete(autocomplete.Select2QuerySetView):
@@ -71,15 +71,19 @@ class TagAutocomplete(autocomplete.Select2QuerySetView):
 
 
 @login_required
-def list_view(request, list_id=None):
-    if list_id:
-        lst = get_object_or_404(List, id=list_id, user=request.user)
-        all_checked = lst.items.exists() and not lst.items.filter(checked=False).exists()
-    else:
-        lst = None
-        all_checked = False
+def list_view(request):
+    show_all_lists = request.GET.get('all') == '1'
+
     # only current user lists
-    lists = List.objects.filter(parent=None, user=request.user)
+    base_lists_qs = List.objects.filter(parent=None, user=request.user)
+    total_lists = base_lists_qs.count()
+    has_more_lists = total_lists > 5
+
+    if show_all_lists:
+        lists = base_lists_qs
+    else:
+        lists = base_lists_qs[:5]
+
     form = ListCreateForm()
 
     if request.method == 'POST':
@@ -99,9 +103,45 @@ def list_view(request, list_id=None):
 
     return render(request, 'lists/list.html', {
         'lists': lists,
+        'form': form,
+        'has_more_lists': has_more_lists,
+        'show_all_lists': show_all_lists,
+    })
+
+
+@login_required
+def list_detail_view(request, list_id):
+    lst = get_object_or_404(List, id=list_id, user=request.user)
+    all_checked = lst.items.exists() and not lst.items.filter(checked=False).exists()
+    edit_mode = request.GET.get('edit') == '1'
+    form = ListCreateForm(instance=lst) if edit_mode else None
+    item_formset = ItemFormSet(instance=lst, prefix='items') if edit_mode else None
+    return render(request, 'lists/list_detail.html', {
         'current_list': lst,
         'all_checked': all_checked,
         'form': form,
+        'item_formset': item_formset,
+        'edit_mode': edit_mode,
+    })
+
+
+@login_required
+@require_POST
+def edit_list(request, list_id):
+    lst = get_object_or_404(List, id=list_id, user=request.user)
+    form = ListCreateForm(request.POST, instance=lst)
+    item_formset = ItemFormSet(request.POST, instance=lst, prefix='items')
+    if form.is_valid() and item_formset.is_valid():
+        form.save()
+        item_formset.save()
+        return redirect('list_detail', list_id=list_id)
+    all_checked = lst.items.exists() and not lst.items.filter(checked=False).exists()
+    return render(request, 'lists/list_detail.html', {
+        'current_list': lst,
+        'all_checked': all_checked,
+        'form': form,
+        'item_formset': item_formset,
+        'edit_mode': True,
     })
 
 @require_POST

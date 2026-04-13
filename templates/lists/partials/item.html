@@ -1,0 +1,9 @@
+<div class="item-row">
+    <form method="post" action="{% url 'toggle_item' item.id %}" style="display:inline;">
+        {% csrf_token %}
+        <button type="submit" class="checkbox-btn {% if item.checked %}checked{% endif %}">
+            {% if item.checked %}✓{% else %}○{% endif %}
+        </button>
+    </form>
+    <span class="item-text {% if item.checked %}text-decoration-line-through text-muted{% endif %}">{{ item.text }}</span>
+</div>
