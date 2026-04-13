@@ -71,15 +71,19 @@ class TagAutocomplete(autocomplete.Select2QuerySetView):
 
 
 @login_required
-def list_view(request, list_id=None):
-    if list_id:
-        lst = get_object_or_404(List, id=list_id, user=request.user)
-        all_checked = lst.items.exists() and not lst.items.filter(checked=False).exists()
-    else:
-        lst = None
-        all_checked = False
+def list_view(request):
+    show_all_lists = request.GET.get('all') == '1'
+
     # only current user lists
-    lists = List.objects.filter(parent=None, user=request.user)
+    base_lists_qs = List.objects.filter(parent=None, user=request.user)
+    total_lists = base_lists_qs.count()
+    has_more_lists = total_lists > 5
+
+    if show_all_lists:
+        lists = base_lists_qs
+    else:
+        lists = base_lists_qs[:5]
+
     form = ListCreateForm()
 
     if request.method == 'POST':
@@ -99,10 +103,52 @@ def list_view(request, list_id=None):
 
     return render(request, 'lists/list.html', {
         'lists': lists,
+        'form': form,
+        'has_more_lists': has_more_lists,
+        'show_all_lists': show_all_lists,
+    })
+
+
+@login_required
+def list_detail_view(request, list_id):
+    lst = get_object_or_404(List, id=list_id, user=request.user)
+    all_checked = lst.items.exists() and not lst.items.filter(checked=False).exists()
+    edit_mode = request.GET.get('edit') == '1'
+    form = ListCreateForm(instance=lst) if edit_mode else None
+    return render(request, 'lists/list_detail.html', {
         'current_list': lst,
         'all_checked': all_checked,
         'form': form,
+        'edit_mode': edit_mode,
     })
+
+
+@login_required
+@require_POST
+def edit_list(request, list_id):
+    lst = get_object_or_404(List, id=list_id, user=request.user)
+    form = ListCreateForm(request.POST, instance=lst)
+    if form.is_valid():
+        form.save()
+        raw_items = request.POST.getlist('items[]')
+        cleaned_items = [text.strip() for text in raw_items if text.strip()]
+
+        # Keep existing checked states where possible by updating items by position.
+        existing_items = list(lst.items.order_by('id'))
+        for index, text in enumerate(cleaned_items):
+            if index < len(existing_items):
+                item = existing_items[index]
+                if item.text != text:
+                    item.text = text
+                    item.save(update_fields=['text'])
+            else:
+                ListItem.objects.create(list=lst, text=text)
+
+        if len(existing_items) > len(cleaned_items):
+            for item in existing_items[len(cleaned_items):]:
+                item.delete()
+
+    return redirect('list_detail', list_id=list_id)
 
 @require_POST
 def toggle_item(request, item_id):
